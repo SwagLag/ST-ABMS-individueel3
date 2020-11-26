@@ -1,24 +1,4 @@
-import random  # Random is al ingebouwd in mesa, dus deze import wordt feitelijk nooit gebruikt.
-
-from mesa import Agent, Model  # Staat de definitie van agents toe,
-# en de definitie van o.a. 'steps', waarmee elke agent acties kan
-# uitvoeren (op basis van interne state &
-
-from mesa.time import RandomActivation  # Activeert agents in een
-# willekeurige orde.
-
-from mesa.space import MultiGrid  # MultiGrid staat meerdere agents in
-# één cel toe, dit definieert de omgeving en tegelijkertijd de perceptie.
-
-from mesa.datacollection import DataCollector  # Verzamelt data die daarna
-# verwerkt kan worden.
-
-def compute_gini(model):
-    agent_wealths = [agent.money for agent in model.schedule.agents]
-    x = sorted(agent_wealths)
-    N = model.agent_count
-    B = sum(xi * (N - i) for i, xi in enumerate(x)) / (N * sum(x))
-    return 1 + (1 / N) - 2 * B
+from mesa import Agent
 
 class MAgent(Agent):
     """An agent who starts with a set amount of money."""
@@ -68,7 +48,7 @@ class MAgent(Agent):
         self.move()  # Altijd eerst ergens random naar toe.
         self.see()
         if self.state == 1:
-            if len(self.neighbors) > 1:  # We want to enforce an element of randomness.
+            if len(self.neighbors) > 1:  # We willen een element van willekeurigheid
                 target = self.random.choice(self.neighbors)
                 money = self.random.randrange(self.money)
                 self.transfer(target,money)
@@ -91,29 +71,3 @@ class MAgent(Agent):
         # self.move()
         self.update()
         self.act()
-
-
-class MModel(Model):
-    """The environment(?) in which the simulation takes place(??)"""
-    def __init__(self, agent_count,width,height):
-
-        self.agent_count = agent_count  # Might wanna save it for reference I suppose
-        self.schedule = RandomActivation(self)  # Runs step() on agents in random order each time step() is called on this object
-        self.grid = MultiGrid(width,height,True)  # Waar is de True voor?
-        self.running = True  # Model is aan de slag; als deze false is beëindigt hij.
-
-        for i in range(agent_count):
-            a = MAgent(i,self)
-            self.schedule.add(a)
-            x = self.random.randrange(self.grid.width)
-            y = self.random.randrange(self.grid.height)
-            self.grid.place_agent(a, (x, y))
-
-        self.datacollector = DataCollector(
-            model_reporters={"Gini":compute_gini},
-            agent_reporters={"Money":"money"})
-
-    def step(self):
-        """Advance time by one step"""
-        self.datacollector.collect(self)
-        self.schedule.step()
